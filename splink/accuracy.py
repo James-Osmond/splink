@@ -259,9 +259,16 @@ def prediction_errors_from_labels_table(
     include_false_positives=True,
     include_false_negatives=True,
     threshold=0.5,
+    threshold_clerical_match_score=None,
+    threshold_match_probability=None    
 ):
     # Read from the cache or generate
     nodes_with_tf = linker._initialise_df_concat_with_tf()
+
+    if threshold_clerical_match_score is None:
+        threshold_clerical_match_score = threshold
+    if threshold_match_probability is None:
+        threshold_match_probability = threshold
 
     sqls = predictions_from_sample_of_pairwise_labels_sql(linker, labels_tablename)
 
@@ -269,13 +276,13 @@ def prediction_errors_from_labels_table(
         linker._enqueue_sql(sql["sql"], sql["output_table_name"])
 
     false_positives = f"""
-    (clerical_match_score < {threshold} and
-    match_probability > {threshold})
+    (clerical_match_score < {threshold_clerical_match_score} and
+    match_probability > {threshold_match_probability})
     """
 
     false_negatives = f"""
-    (clerical_match_score > {threshold} and
-    match_probability < {threshold})
+    (clerical_match_score > {threshold_clerical_match_score} and
+    match_probability < {threshold_match_probability})
     """
 
     where_conditions = []
@@ -335,11 +342,18 @@ def prediction_errors_from_label_column(
     include_false_positives=True,
     include_false_negatives=True,
     threshold=0.5,
+    threshold_clerical_match_score=None,
+    threshold_match_probability=None   
 ):
     df_predict = _predict_from_label_column_sql(
         linker,
         label_colname,
     )
+
+    if threshold_clerical_match_score is None:
+        threshold_clerical_match_score = threshold
+    if threshold_match_probability is None:
+        threshold_match_probability = threshold
 
     # Clerical match score is 1 where the label_colname is equal else zero
 
@@ -360,15 +374,15 @@ def prediction_errors_from_label_column(
     linker._enqueue_sql(sql, "__splink__predictions_from_label_column")
 
     false_positives = f"""
-    (clerical_match_score < {threshold} and
+    (clerical_match_score < {threshold_clerical_match_score} and
     match_probability > {threshold})
     """
 
     false_negatives = f"""
-    ((clerical_match_score > {threshold} and
-    match_probability < {threshold})
+    ((clerical_match_score > {threshold_clerical_match_score} and
+    match_probability < {threshold_match_probability})
     or
-    (clerical_match_score > {threshold} and
+    (clerical_match_score > {threshold_match_probability} and
      found_by_blocking_rules = False)
     )
     """
